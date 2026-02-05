@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>清除旧数据</title>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            text-align: center;
+            max-width: 500px;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        p {
+            color: #666;
+            line-height: 1.8;
+            margin-bottom: 30px;
+        }
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 16px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: transform 0.2s;
+            margin: 10px;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+        .success {
+            color: #4caf50;
+            font-weight: bold;
+            margin-top: 20px;
+            display: none;
+        }
+        .warning {
+            background: #ff9800;
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔄 清除旧数据</h1>
+        
+        <div class="warning">
+            ⚠️ 注意：此操作会删除所有旧的笔记数据！<br>
+            请确保已经导出备份！
+        </div>
+        
+        <p>
+            如果您看到的章节标题还是英文（如 "Chapter 1: The Drawing"），<br>
+            说明浏览器缓存了旧数据。<br><br>
+            点击下面的按钮清除旧数据，然后重新打开笔记应用。
+        </p>
+        
+        <button onclick="clearOldData()">清除旧数据</button>
+        <button onclick="window.location.href='little-prince-journal-modular.html'" style="background: #4caf50;">打开笔记应用</button>
+        
+        <div class="success" id="successMsg">
+            ✅ 旧数据已清除！<br>
+            现在可以打开笔记应用了。
+        </div>
+    </div>
+
+    <script>
+        function clearOldData() {
+            // 清除所有 localStorage 数据
+            const keys = Object.keys(localStorage);
+            let cleared = 0;
+            
+            keys.forEach(key => {
+                if (key.startsWith('notebooks') || 
+                    key.startsWith('chapters_') || 
+                    key.startsWith('page_') || 
+                    key.startsWith('annotations_')) {
+                    localStorage.removeItem(key);
+                    cleared++;
+                }
+            });
+            
+            // 显示成功消息
+            document.getElementById('successMsg').style.display = 'block';
+            
+            console.log(`已清除 ${cleared} 条旧数据`);
+            
+            // 3秒后自动跳转
+            setTimeout(() => {
+                window.location.href = 'little-prince-journal-modular.html';
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
