@@ -80,12 +80,16 @@ const App = {
             el.className = `notebook-item ${notebook.id === this.state.currentNotebookId ? 'active' : ''}`;
             el.style.position = 'relative';
             el.onclick = () => this.switchNotebook(notebook.id);
+            el.oncontextmenu = (e) => {
+                e.preventDefault();
+                this.showNotebookContextMenu(e, notebook.id);
+            };
             el.innerHTML = `
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-3">
                     <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
                     <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
                 </svg>
-                <span contenteditable="true" class="notebook-name" onblur="App.updateNotebookName(${notebook.id}, this.textContent)" onclick="event.stopPropagation()">${notebook.name}</span>
+                <span class="notebook-name">${notebook.name}</span>
                 ${this.notebooks.length > 1 ? `
                 <button onclick="event.stopPropagation(); App.deleteNotebook(${notebook.id})" 
                         style="position: absolute; right: 8px; width: 20px; height: 20px; border-radius: 4px; background: #ff6b6b; color: white; border: none; cursor: pointer; display: none; align-items: center; justify-content: center; font-size: 12px;"
@@ -201,6 +205,15 @@ const App = {
         }
     },
 
+    // 显示笔记本右键菜单
+    showNotebookContextMenu(e, notebookId) {
+        const newName = prompt('重命名笔记本:', this.notebooks.find(n => n.id === notebookId).name);
+        if (newName && newName.trim()) {
+            this.updateNotebookName(notebookId, newName.trim());
+            this.renderNotebookList();
+        }
+    },
+
     // 渲染章节列表
     renderChapterList() {
         const chapterListEl = document.getElementById('chapterList');
@@ -211,8 +224,12 @@ const App = {
             el.className = `chapter-card ${idx === this.state.currentChapterIndex ? 'active' : ''}`;
             el.style.position = 'relative';
             el.onclick = () => this.loadChapter(idx);
+            el.oncontextmenu = (e) => {
+                e.preventDefault();
+                this.showChapterContextMenu(e, idx);
+            };
             el.innerHTML = `
-                <div class="chapter-title font-serif font-bold text-gray-800 text-lg" contenteditable="true" onblur="App.updateChapterTitle(${idx}, this.textContent)" onclick="event.stopPropagation()">${chap.title}</div>
+                <div class="chapter-title font-serif font-bold text-gray-800 text-lg">${chap.title}</div>
                 ${this.chapters.length > 1 ? `
                 <button onclick="event.stopPropagation(); App.deleteChapter(${idx})" 
                         style="position: absolute; top: 8px; right: 8px; width: 24px; height: 24px; border-radius: 4px; background: #ff6b6b; color: white; border: none; cursor: pointer; display: none; align-items: center; justify-content: center; font-size: 14px;"
@@ -309,6 +326,15 @@ const App = {
             this.chapters[index].title = newTitle.trim();
             Storage.saveChapters(this.state.currentNotebookId, this.chapters);
         } else {
+            this.renderChapterList();
+        }
+    },
+
+    // 显示章节右键菜单
+    showChapterContextMenu(e, index) {
+        const newTitle = prompt('重命名章节:', this.chapters[index].title);
+        if (newTitle && newTitle.trim()) {
+            this.updateChapterTitle(index, newTitle.trim());
             this.renderChapterList();
         }
     },
