@@ -50,21 +50,10 @@ const App = {
             // 保存示例装饰组件
             const annotations = SampleData.getLittlePrinceAnnotations();
             Object.keys(annotations).forEach(key => {
-                const [chapterIndex, pageIndex] = key.split('_').map(Number);
-                Storage.saveAnnotations(chapterIndex, pageIndex, annotations[key]);
-            });
-        }
-        
-        // 窗边的小豆豆笔记本
-        const chapters2 = Storage.loadChapters(2);
-        if (chapters2.length === 0) {
-            const totoChapters = SampleData.getTotoChapters();
-            Storage.saveChapters(2, totoChapters);
-            
-            // 保存示例装饰组件
-            const annotations = SampleData.getTotoAnnotations();
-            Object.keys(annotations).forEach(key => {
-                const [chapterIndex, pageIndex] = key.split('_').map(Number);
+                // 键名格式: annotations_0_0
+                const parts = key.split('_');
+                const chapterIndex = parseInt(parts[1]);
+                const pageIndex = parseInt(parts[2]);
                 Storage.saveAnnotations(chapterIndex, pageIndex, annotations[key]);
             });
         }
@@ -621,6 +610,140 @@ function toggleFullscreen() {
 
 function changePage(delta) {
     App.changePage(delta);
+}
+
+// 导出功能
+function showExportDialog() {
+    const dialog = document.createElement('div');
+    dialog.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: white;
+        padding: 30px;
+        border-radius: 12px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        z-index: 10000;
+        min-width: 400px;
+    `;
+    
+    const currentNotebook = App.notebooks.find(nb => nb.id === App.state.currentNotebookId);
+    const currentChapter = App.chapters[App.state.currentChapterIndex];
+    
+    dialog.innerHTML = `
+        <h3 style="margin: 0 0 20px 0; color: #333;">导出笔记</h3>
+        <div style="margin-bottom: 20px;">
+            <label style="display: block; margin-bottom: 10px;">
+                <input type="radio" name="exportType" value="all" checked>
+                导出所有笔记本
+            </label>
+            <label style="display: block; margin-bottom: 10px;">
+                <input type="radio" name="exportType" value="notebook">
+                导出当前笔记本：${currentNotebook ? currentNotebook.name : ''}
+            </label>
+            <label style="display: block; margin-bottom: 10px;">
+                <input type="radio" name="exportType" value="chapter">
+                导出当前章节：${currentChapter ? currentChapter.title : ''}
+            </label>
+        </div>
+        <div style="display: flex; gap: 10px; justify-content: flex-end;">
+            <button onclick="closeExportDialog()" style="padding: 8px 20px; border: 1px solid #ddd; background: white; border-radius: 6px; cursor: pointer;">取消</button>
+            <button onclick="doExport()" style="padding: 8px 20px; border: none; background: #4CAF50; color: white; border-radius: 6px; cursor: pointer;">导出</button>
+        </div>
+    `;
+    
+    const overlay = document.createElement('div');
+    overlay.id = 'exportOverlay';
+    overlay.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.5);
+        z-index: 9999;
+    `;
+    overlay.onclick = closeExportDialog;
+    
+    document.body.appendChild(overlay);
+    document.body.appendChild(dialog);
+    window.exportDialog = dialog;
+}
+
+function closeExportDialog() {
+    const overlay = document.getElementById('exportOverlay');
+    if (overlay) overlay.remove();
+    if (window.exportDialog) window.exportDialog.remove();
+}
+
+function doExport() {
+    const exportType = document.querySelector('input[name="exportType"]:checked').value;
+    let data;
+    let filename;
+    
+    try {
+        switch (exportType) {
+            case 'all':
+                data = Storage.exportAllData();
+                filename = `笔记-全部-${new Date().toISOString().split('T')[0]}.json`;
+                break;
+            case 'notebook':
+                data = Storage.exportNotebook(App.state.currentNotebookId);
+                const notebook = App.notebooks.find(nb => nb.id === App.state.currentNotebookId);
+                filename = `笔记-${notebook.name}-${new Date().toISOString().split('T')[0]}.json`;
+                break;
+            case 'chapter':
+                const chapter = App.chapters[App.state.currentChapterIndex];
+                data = Storage.exportChapter(App.state.currentNotebookId, chapter.id);
+                filename = `笔记-${chapter.title}-${new Date().toISOString().split('T')[0]}.json`;
+                break;
+        }
+        
+        // 下载文件
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(url);
+        
+        closeExportDialog();
+        alert('导出成功！');
+    } catch (error) {
+        console.error('导出失败:', error);
+        alert('导出失败：' + error.message);
+    }
+}
+
+// 导入功能
+function showImportDialog() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                try {
+                    const data = JSON.parse(event.target.result);
+                    
+                    if (confirm('导入数据将覆盖现有数据，是否继续？')) {
+                        Storage.importAllData(data);
+                        alert('导入成功！页面将刷新。');
+                        location.reload();
+                    }
+                } catch (error) {
+                    console.error('导入失败:', error);
+                    alert('导入失败：' + error.message);
+                }
+            };
+            reader.readAsText(file);
+        }
+    };
+    input.click();
 }
 
 // 页面加载完成后初始化

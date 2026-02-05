@@ -16,10 +16,7 @@ const Storage = {
             }
         }
         return [
-            { id: 1, name: "小王子", icon: "📖" },
-            { id: 2, name: "窗边的小豆豆", icon: "🌸" },
-            { id: 3, name: "项目笔记", icon: "💻" },
-            { id: 4, name: "日常草稿", icon: "📝" }
+            { id: 1, name: "小王子", icon: "📖" }
         ];
     },
 
@@ -174,6 +171,86 @@ const Storage = {
                 data.annotations[key] = localStorage.getItem(key);
             }
         });
+        
+        return data;
+    },
+
+    // 导出单个笔记本
+    exportNotebook(notebookId) {
+        const notebooks = this.loadNotebooks();
+        const notebook = notebooks.find(nb => nb.id === notebookId);
+        
+        if (!notebook) {
+            throw new Error('笔记本不存在');
+        }
+        
+        const data = {
+            version: '1.0',
+            exportDate: new Date().toISOString(),
+            appName: '笔记',
+            exportType: 'notebook',
+            notebooks: [notebook],
+            chapters: {},
+            pages: {},
+            annotations: {}
+        };
+        
+        // 收集该笔记本的章节数据
+        data.chapters[notebookId] = this.loadChapters(notebookId);
+        
+        // 收集该笔记本的页面和组件数据
+        const chapters = data.chapters[notebookId];
+        chapters.forEach((chapter, chapterIndex) => {
+            for (let pageIndex = 0; pageIndex < chapter.pageCount; pageIndex++) {
+                const pageKey = `page_${chapterIndex}_${pageIndex}`;
+                const annotKey = `annotations_${chapterIndex}_${pageIndex}`;
+                
+                const pageContent = localStorage.getItem(pageKey);
+                const annotContent = localStorage.getItem(annotKey);
+                
+                if (pageContent) data.pages[pageKey] = pageContent;
+                if (annotContent) data.annotations[annotKey] = annotContent;
+            }
+        });
+        
+        return data;
+    },
+
+    // 导出单个章节
+    exportChapter(notebookId, chapterId) {
+        const chapters = this.loadChapters(notebookId);
+        const chapterIndex = chapters.findIndex(ch => ch.id === chapterId);
+        
+        if (chapterIndex === -1) {
+            throw new Error('章节不存在');
+        }
+        
+        const chapter = chapters[chapterIndex];
+        const notebooks = this.loadNotebooks();
+        const notebook = notebooks.find(nb => nb.id === notebookId);
+        
+        const data = {
+            version: '1.0',
+            exportDate: new Date().toISOString(),
+            appName: '笔记',
+            exportType: 'chapter',
+            notebookInfo: notebook,
+            chapter: chapter,
+            pages: {},
+            annotations: {}
+        };
+        
+        // 收集该章节的页面和组件数据
+        for (let pageIndex = 0; pageIndex < chapter.pageCount; pageIndex++) {
+            const pageKey = `page_${chapterIndex}_${pageIndex}`;
+            const annotKey = `annotations_${chapterIndex}_${pageIndex}`;
+            
+            const pageContent = localStorage.getItem(pageKey);
+            const annotContent = localStorage.getItem(annotKey);
+            
+            if (pageContent) data.pages[pageKey] = pageContent;
+            if (annotContent) data.annotations[annotKey] = annotContent;
+        }
         
         return data;
     },

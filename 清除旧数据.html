@@ -77,7 +77,7 @@
         </p>
         
         <button onclick="clearOldData()">清除旧数据</button>
-        <button onclick="window.location.href='little-prince-journal-modular.html'" style="background: #4caf50;">打开笔记应用</button>
+        <button onclick="window.location.href='index.html'" style="background: #4caf50;">打开笔记应用</button>
         
         <div class="success" id="successMsg">
             ✅ 旧数据已清除！<br>
@@ -87,28 +87,31 @@
 
     <script>
         function clearOldData() {
-            // 清除所有 localStorage 数据
+            // 完全清除所有 localStorage 数据
+            console.log('开始清除所有数据...');
+            
+            // 方法1：逐个删除
             const keys = Object.keys(localStorage);
             let cleared = 0;
             
             keys.forEach(key => {
-                if (key.startsWith('notebooks') || 
-                    key.startsWith('chapters_') || 
-                    key.startsWith('page_') || 
-                    key.startsWith('annotations_')) {
-                    localStorage.removeItem(key);
-                    cleared++;
-                }
+                console.log('删除:', key);
+                localStorage.removeItem(key);
+                cleared++;
             });
+            
+            // 方法2：完全清空（双保险）
+            localStorage.clear();
+            
+            console.log(`已清除 ${cleared} 条数据`);
+            console.log('localStorage 已完全清空');
             
             // 显示成功消息
             document.getElementById('successMsg').style.display = 'block';
             
-            console.log(`已清除 ${cleared} 条旧数据`);
-            
             // 3秒后自动跳转
             setTimeout(() => {
-                window.location.href = 'little-prince-journal-modular.html';
+                window.location.href = 'index.html';
             }, 3000);
         }
     </script>
